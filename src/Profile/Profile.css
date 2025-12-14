@@ -5,7 +5,7 @@
     background-color: var(--white);
     border: 1px solid rgba(128, 128, 128, 0.253);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    height: 530px;
+    height: 90vh;
     padding: 10px;
 }
 
