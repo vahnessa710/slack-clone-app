@@ -1,171 +1,132 @@
-import React, { useState } from 'react';
-import axios from "axios";
-import { API_URL } from "../../constants/Constants";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useData } from "../../context/DataProvider";
-import './Login.css';  
+import "./Login.css";
 import logoLandscape from "../../assets/logo_landscape.png";
-import rose from '../../assets/rose.png';
+import rose from "../../assets/rose.png";
 import { IoMdAddCircle } from "react-icons/io";
+import { useAuth } from "../../context/AuthProvider.jsx";
 
-function Login({onLogin, loggedUserId, setLoggedUserId}) {
-  // const { onLogin } = props;
-  const { handleHeaders } = useData();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+function Login() {  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [isSignup, setIsSignup] = useState(false); // Toggle signup
-  
+
   const navigate = useNavigate();
-  
+  const { login, signup, loading, error } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const loginCredentials = {
-        email,
-        password
-      }
-
-      const response = await axios.post(`${API_URL}/auth/sign_in`, loginCredentials);
-      const { data, headers } = response;
-      
-      if(data && headers) {
-        // headers as values in our context
-        handleHeaders(headers);
-        setLoggedUserId(response.data.data.id);
-        console.log('loggedUserId', response.data.data.id);
-        onLogin();
-        navigate('/dashboard');
-      }
-    } catch(error) {
-      if(error.response.data.errors) {
-        return alert("Invalid credentials");
-      }
+    const result = await login(email, password);
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      alert(result.error || "Login failed");
     }
   };
 
-  const handleAutoLogin = async () => {
-    try {
-      // Predefined credentials or token for the "Add Account" box
-      const predefinedCredentials = {
-        email: "vahnessa.gonzales@gmail.com",
-        password: "password"
-      };
-  
-      const response = await axios.post(`${API_URL}/auth/sign_in`, predefinedCredentials);
-      const { data, headers } = response;
-  
-      if (data && headers) {
-        // Use handleHeaders to save headers to context
-        handleHeaders(headers);
-        setLoggedUserId(response.data.data.id);
-        onLogin();
-        navigate("/dashboard");
-      }
-    } catch (error) {
-      if (error.response.data.errors) {
-        alert("Failed to auto-login. Please try again.");
-      }
-    }
-  };
+  // const handleAutoLogin = async () => {
+  //   try {
+  //     const predefinedCredentials = {
+  //       user: {
+  //         // Wrap in 'user' key
+  //         email: "vahnessa.gonzales@gmail.com",
+  //         password: "password",
+  //       },
+  //     };
+
+  //     const response = await axios.post(
+  //       `${API_URL}/api/v1/login`,
+  //       predefinedCredentials,
+  //     );
+
+  //     if (response.data) {
+  //       setLoggedUserId(response.data.data.user.id);
+  //       onLogin();
+  //       navigate("/dashboard");
+  //     }
+  //   } catch (error) {
+  //     console.error("Auto-login error:", error);
+  //     alert("Failed to auto-login. Please try again.");
+  //   }
+  // };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (password !== passwordConfirmation) {
-      return alert("Passwords do not match.");
-    }
-    
- 
-    try {
-      const signupData = { 
-        email:email, 
-        password: password, 
-        password_confirmation: passwordConfirmation 
-      };
-      console.log(signupData)
 
-      const response = await axios.post(`${API_URL}/auth/`, signupData);
-      console.log("Signup Response:", response.data); // Debugging response
-      
-      if (response.data) {
-        alert("Account created successfully! You can now log in.");
-        navigate('/dashboard');
-        setIsSignup(false); // Switch back to login
-      }
-    } catch (error) {
-      console.log(error)
-      alert(error.response?.data?.errors || "Error creating account");
+    const result = await signup(email, password, passwordConfirmation);
+
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      alert(result.error || "Signup failed");
     }
+  };
+
+  // Add loading state if needed
+  if (loading) {
+    return <div>Loading...</div>;
   }
 
   return (
     <div className="login-container">
+      <div className="login-left">
+        <img src={logoLandscape} id="logo-landscape" />
 
-        <div className="login-left">
-            <img 
-            src= {logoLandscape}
-            id = "logo-landscape"
-            />
+        <h3 id="recent-logins">Recent Logins</h3>
+        <p className="recent-logins-description">
+          Click your picture or add an account.
+        </p>
 
-            <h3 id = "recent-logins">Recent Logins</h3>
-            <p className = "recent-logins-description">Click your picture or add an account.</p>
-            
-            <div className='add-something-container'>
-                  <div className="add-account-box"id = "primary-profile" onClick={handleAutoLogin}>
-                      <div className='dp-container'>
-                          <img
-                            src={rose}
-                            alt = 'profile'
-                            />
-                      </div>
-                      <div className = "user-name">vahnessa.gonzales</div>
-                  </div>
-                  <div 
-                    className="add-account-box"
-                    onClick={() => setIsSignup(true)} >
-                    <div className='img-box'>
-                      <p 
-                      className='add-account-icon'
-                      >
-                      <IoMdAddCircle /> 
-                      </p>
-                    </div>
-                    <p className='add-account-caption'>Add Account</p>
-                  </div>
-                    
+        <div className="add-something-container">
+          <div
+            className="add-account-box"
+            id="primary-profile"
+            // onClick={handleAutoLogin}
+          >
+            <div className="dp-container">
+              <img src={rose} alt="profile" />
             </div>
+            <div className="user-name">vahnessa.gonzales</div>
+          </div>
+          <div className="add-account-box" onClick={() => setIsSignup(true)}>
+            <div className="img-box">
+              <p className="add-account-icon">
+                <IoMdAddCircle />
+              </p>
+            </div>
+            <p className="add-account-caption">Add Account</p>
+          </div>
+        </div>
       </div>
 
+      <div className="login-box">
+        {/* Account Creation Window */}
+        {isSignup ? (
+          <form onSubmit={handleSignup}>
+            <h2 className="create-an-account" data-testid="createAcctHeader">
+              Create an Account
+            </h2>
 
-<div className="login-box">
-    {/* Account Creation Window */}
-    {isSignup ? (
-        <form onSubmit={handleSignup}>
-          <h2 
-          className='create-an-account'
-          data-testid="createAcctHeader"
-          >Create an Account</h2>
-          
-            <p className = "create-account-description">It's quick and easy.</p>
+            <p className="create-account-description">It's quick and easy.</p>
             <hr />
-          
 
             <div className="input-group">
               <label>Email</label>
               <input
-                className='input-group-signUp'
+                className="input-group-signUp"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                required />
+                required
+              />
             </div>
 
             <div className="input-group">
               <label>Password</label>
               <input
-                className='input-group-signUp'
+                className="input-group-signUp"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -177,7 +138,7 @@ function Login({onLogin, loggedUserId, setLoggedUserId}) {
             <div className="input-group">
               <label>Confirm password</label>
               <input
-                className='input-group-signUp'
+                className="input-group-signUp"
                 type="password"
                 value={passwordConfirmation}
                 onChange={(e) => setPasswordConfirmation(e.target.value)}
@@ -186,74 +147,69 @@ function Login({onLogin, loggedUserId, setLoggedUserId}) {
               />
             </div>
 
-            <button 
-              type="submit" 
-              className="btn"
-              >
-            Sign Up
+            <button type="submit" className="btn">
+              Sign Up
             </button>
-            
-            <div className='caption-under-signUp-modal'>
-            <span>
-              Already have an account?
-                <span className="toggle-link" onClick={() => setIsSignup(false)}>
-                Login here.
+
+            <div className="caption-under-signUp-modal">
+              <span>
+                Already have an account?
+                <span
+                  className="toggle-link"
+                  onClick={() => setIsSignup(false)}
+                >
+                  Login here.
                 </span>
-            </span>
+              </span>
             </div>
-            
-            
-    </form>
-  ) : ( 
-    <form onSubmit={handleSubmit}>
-        <div className="input-group">
-          <input
-            className='input-group-login'
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email address"
-            required
-          />
-        </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div className="input-group">
+              <input
+                className="input-group-login"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                required
+              />
+            </div>
 
-        <div className="input-group">
-          <input
-            className='input-group-login'
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            required
-          />
-        </div>
+            <div className="input-group">
+              <input
+                className="input-group-login"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+            </div>
 
-        <button 
-          type="submit" 
-          className="btn" >
-            Log In
-        </button>
+            <button type="submit" className="btn">
+              Log In
+            </button>
 
-        <p className='forgot-pw toggle-link'>
-          Forgot password? 
-        </p>
+            <p className="forgot-pw toggle-link">Forgot password?</p>
 
-        <hr/>
+            <hr />
 
-        <div className='new-account-container'>
-          <p
-            className="new-account-btn" 
-            onClick={() => setIsSignup(true)}
-            data-testid="createAcctBtn"
-            id ="create-account-button">
-            Create new account
-          </p>
-        </div>
-  </form>
-  )}
-</div>
-</div>
-);
+            <div className="new-account-container">
+              <p
+                className="new-account-btn"
+                onClick={() => setIsSignup(true)}
+                data-testid="createAcctBtn"
+                id="create-account-button"
+              >
+                Create new account
+              </p>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default Login;
