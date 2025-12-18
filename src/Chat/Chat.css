@@ -1,12 +1,12 @@
 /* Main container styling */
 .group-window {
   flex: 0.7;
-  flex-direction: column; /* Changed to column for better chat layout */
+  flex-direction: column;
   background-color: var(--white);
   border: 1px solid rgba(128, 128, 128, 0.253);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
   display: flex;
-  height: 530px; /* Optional: Fix height for chat area */
+  height: 90vh;
 }
 .receiver-header-container {
   display: flex;
