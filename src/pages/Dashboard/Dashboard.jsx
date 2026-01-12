@@ -1,106 +1,55 @@
-import { FaHome, FaEnvelope, FaCog, FaUser, FaSignOutAlt } from 'react-icons/fa'; 
 import { useState } from "react";
-import { API_URL } from "../../constants/Constants.jsx";
-import './Dashboard.css'; 
-import Channel from '../../Channel/Channel.jsx';
-import logo_only from '../../assets/logo_only.png';
-import { useData } from '../../context/DataProvider.jsx';
+import "./Dashboard.css";
+import Channel from "../../Channel/Channel.jsx";
+import NavBar from "../../NavBar/NavBar.jsx";
+import Chat from "../../Chat/Chat.jsx";
+import Profile from "/home/ryan/vahnessa/slack-clone-app/src/Profile/Profile.jsx";
+import Primary from "../../Primary/Primary.jsx";
+import DirectMsg from "../../DirectMsg/DirectMsg.jsx";
+import { useChannel } from "../../context/ChannelProvider";
 
-function Dashboard({onLogout, loggedUserId}) {
-  const { userHeaders } = useData();
-  const [ primary, setPrimary ] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [receiver, setReceiver] = useState();
-  const [userList, setUserList] = useState([]);
-  const [channelDetails, setChannelDetails] = useState([]);
-  const [channelMembers, setChannelMembers] = useState([]);
-  const [channel, setChannel] = useState([]);
-  const [userId, setUserId] = useState(receiver);
-  const loggedUser = ({uid: userHeaders.uid, id: receiver})
-  const [ editButton, setEditButton ] = useState(false);
-
- 
-     // Function to toggle dark mode
-  const toggleDarkMode = () => {
-    document.documentElement.classList.toggle('dark');
-    
-  };
-
-  const handlePrimary = () => {
-    setPrimary((prevPrimary) => !prevPrimary);
-  };
-
-
+function Dashboard() {
+  const { currentChannel, selectChannel } = useChannel();
+  const [editButton, setEditButton] = useState(false);
+  const [primary, setPrimary] = useState(false);
   return (
-    <div className="dashboard-container">
+    <>
+      <NavBar primary={primary} setPrimary={setPrimary} />
 
-      <div className="main-content">
-        
-        <header className="header">
-          <img 
-          src={logo_only} 
-          alt="logo"
-          className="logo-only"
-          data-testid = "logo" />
+      <Primary primary={primary} setPrimary={setPrimary} />
 
+      <div className="dashboard-container">
+        <div className="channel-bar">
+          <Channel
+            primary={primary}
+            setPrimary={setPrimary}
+            editButton={editButton}
+            setEditButton={setEditButton}
+          />
 
-          <div className='icon-container'>
-            <a
-            ><FaHome className="icon"/></a>
-          </div>
-              
-          <div className='icon-container' >
-            <a><FaEnvelope className="icon" /></a>
-          </div>
+          <DirectMsg />
+        </div>
 
-          <div className='icon-container'
-          onClick={toggleDarkMode}>
-            <a><FaCog className="icon" /></a>
-          </div>
-          
-          <div className='icon-container'
-          onClick={handlePrimary} >
-            <a><FaUser className="icon"
-            /></a>
-          </div>
-          <div className="user-info">
-            <span>{loggedUser.uid.split("@")[0]}</span>
-            <button 
-              className="logout-button"
-              onClick={onLogout}
-            > 
-              <FaSignOutAlt /> 
-              Logout
-            </button>
-          </div>
-        </header>
-
-        <Channel 
-        userList= {userList} 
-        setUserList = {setUserList}
-        messages ={messages} 
-        setMessages={setMessages} 
-        receiver = {receiver} 
-        setReceiver = {setReceiver}
-        channelDetails ={channelDetails} 
-        setChannelDetails = {setChannelDetails} 
-        channelMembers = {channelMembers} 
-        setChannelMembers = {setChannelMembers}
-        channel = {channel}
-        setChannel ={setChannel} 
-        primary = {primary} 
-        setPrimary = {setPrimary} 
-        loggedUser = {loggedUser}
-        editButton = {editButton}
-        setEditButton = {setEditButton}
-        userId = {userId} 
-        setUserId = {setUserId}
-        loggedUserId = {loggedUserId}
+        <Chat
+          channel={currentChannel}
+          editButton={editButton}
+          setEditButton={setEditButton}
         />
-       
+
+        {/* <Profile
+          receiver={receiver}
+          setReceiver={setReceiver}
+          channel={channel}
+          setChannel={setChannel}
+          userList={userList}
+          messages={messages}
+          setMessages={setMessages}
+          channelDetails={channelDetails}
+          channelMembers={channelMembers}
+          setChannelMembers={setChannelMembers}
+        /> */}
       </div>
-      
-    </div>
+    </>
   );
 }
 

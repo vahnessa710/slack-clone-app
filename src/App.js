@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import Login from "./pages/Login/Login.jsx";
 import AuthProvider from "./context/AuthProvider.jsx";
-import { useAuth } from "./context/AuthProvider.jsx"; // Add this
+import { useAuth } from "./context/AuthProvider.jsx"; 
 import "./App.css";
 import { ChannelProvider } from "./context/ChannelProvider.jsx";
 import { UsersProvider } from "./context/UsersProvider";

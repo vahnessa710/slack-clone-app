@@ -8,7 +8,7 @@ body {
 
 .dashboard-container {
   display: flex;
-  height: 100vh;
+  /* height: 100vh; */
 }
 
 /* Sidebar Styling */
@@ -71,66 +71,5 @@ body {
 .main-content {
   flex: 1;
   background-color: whitesmoke;
-}
-
-.header {
-  display: flex;
-  height: 60px;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--white);
-  padding: 15px 20px;
-  margin: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-
-.icon-container > a {
-  color: var(--icon);
-}
-
-.icon-container {
-  width: 10%;
-  padding: 10px;
-  text-align:center;
-}
-
-.icon-container:hover{
-  border-radius: 5px;
-  background-color: hsl(0, 1%,90%);
-  
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-}
-
-.user-info span {
-  margin-right: 15px;
-  color: var(--accent-purple);
-  font-weight: 700;
-}
-
-.logout-button {
-  padding: 8px 15px;
-  border: none;
-  background-color: #e74c3c;
-  color: white;
-  cursor: pointer;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 14px;
-}
-
-.logout-button:hover {
-  background-color: #c0392b;
-}
-
-.logo-only {
-  width: 40px;
-  height: 40px;
 }
 

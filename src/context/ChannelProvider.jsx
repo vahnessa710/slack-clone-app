@@ -1,4 +1,3 @@
-// src/context/ChannelProvider.jsx
 import {
   createContext,
   useState,
@@ -122,7 +121,7 @@ export const ChannelProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       try {
-        const channel = await channelService.getChannel(id);
+        const channel = await channelService.getChannels(id);
         setCurrentChannel(channel);
         return channel;
       } catch (err) {
@@ -140,6 +139,45 @@ export const ChannelProvider = ({ children }) => {
     },
     [isAuthenticated]
   );
+
+  const openOrCreateDM = useCallback(
+    async (userId) => {
+      if (!isAuthenticated) {
+        throw new Error("Not authenticated");
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const channel = await channelService.createDirectMessage(
+          userId,
+          getAuthHeaders()
+        );
+
+        // Ensure channel list stays fresh
+        setChannels((prev) => {
+          const exists = prev.some((c) => c.id === channel.id);
+          return exists ? prev : [channel, ...prev];
+        });
+
+        setCurrentChannel(channel);
+        return channel;
+      } catch (err) {
+        const errorMessage =
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to open direct message";
+
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isAuthenticated, getAuthHeaders]
+  );
+
 
   // Add members to channel
   const addChannelMembers = useCallback(
@@ -187,6 +225,7 @@ export const ChannelProvider = ({ children }) => {
   // Select a channel (without fetching details)
   const selectChannel = useCallback((channel) => {
     setCurrentChannel(channel);
+    console.log(channel)
   }, []);
 
   // Clear error
@@ -208,6 +247,7 @@ export const ChannelProvider = ({ children }) => {
     addChannelMembers,
     selectChannel,
     clearError,
+    openOrCreateDM,
 
     // Helper
     isReady: isAuthenticated && !loading,

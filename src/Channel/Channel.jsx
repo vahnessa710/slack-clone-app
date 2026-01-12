@@ -1,330 +1,240 @@
-import React, { useState, useEffect } from "react";
-import { useData } from "../context/DataProvider";
-import axios from "axios";
-import { API_URL } from "../constants/Constants";
-import Chat from '../Chat/Chat.jsx';
-import '../Channel/Channel.css';
-import Profile from "../Profile/Profile.jsx"
-import Primary from "../Primary/Primary.jsx";
+// src/Channel/Channel.jsx
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../context/AuthProvider";
+import { useChannelService } from "../hooks/useChannelService"; 
+import { useUsers } from "../context/UsersProvider"; 
+import "./Channel.css";
+import { useMessages } from "../context/MessagesProvider";
+import { useChannel } from "../context/ChannelProvider";
 
-function Channel(
-  { messages, 
-    setMessages, 
-    receiver, 
-    setReceiver,
-    channelDetails, 
-    setChannelDetails, 
-    channelMembers, 
-    setChannelMembers, 
-    userList, 
-    setUserList,
-    channel,
-    setChannel,
-    primary = {primary},
-    setPrimary = {setPrimary},
-    loggedUser = {loggedUser},
-    editButton,
-    setEditButton,
-    userId, 
-    setUserId,
-    loggedUserId}) {
+function Channel({ setEditButton }) {
+  const {
+    getChannels,
+    createChannel: createChannelApi,
+    isAuthenticated,
+  } = useChannelService();
+  const { currentUser } = useAuth();
+  const { users, loading: usersLoading } = useUsers();
+  const { loadMessages } = useMessages();
+  const { selectChannel } = useChannel();
 
-  const { userHeaders } = useData();
-  const [channelList, setChannelList] = useState ([]); // render channel list 
-  const [selectedUsers, setSelectedUsers] = useState([]); // checkbox for new channel
-  const [isModalOpen, setIsModalOpen] = useState(false); // toggle window for creating new channel
-  const [newChannelName, setNewChannelName] = useState(""); // new channel name
+  const [channels, setChannels] = useState([]); // ADD LOCAL STATE
+  const [loading, setLoading] = useState(false); // ADD LOCAL STATE
+  const [error, setError] = useState(null); // ADD LOCAL STATE
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [channelSearch, setChannelSearch] = useState("");
   
-
-  // holder of receiver
-  const handleReceiver = ({ id, email }) => {
-    setReceiver({ id, email }); // Store both id and email
-    setChannel(null); // Clear channel when selecting a receiver
-    setEditButton(false);
-  };
-  // function to get user list
-  const getUsers = async () => {
+  // Fetch all channels under current user
+  const fetchChannels = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/users`, { headers: userHeaders });
-      const users = response.data.data || [];
-      setUserList(users);
-    } catch (error) {
-      if(error.response.data.errors) {
-        return alert("Cannot get users");
-      }
+      setLoading(true);
+      setError(null);
+      const channelsData = await getChannels();
+      setChannels(channelsData);
+    } catch (err) {
+      setError(err.message || "Failed to fetch channels");
+      console.error("Error fetching channels:", err);
+    } finally {
+      setLoading(false);
     }
-  }
-  // to render user list
-  useEffect(() => {
-    if(userList.length === 0) {
-      getUsers();
-    }
-  }, [userList])
-// function to get channel list
-  const getChannelList = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/channels`, { headers: userHeaders });
-      const channels = response.data.data || [];
-      setChannelList(channels); 
-    } catch (error) {
-      if(error.response.data.errors) {
-        return alert("Cannot get channels");
-        
-      }
-    }
-  }
+  }, [getChannels]);
 
-// to render channel list
+  // Fetch channels on mount and when auth changes
   useEffect(() => {
-    if(channelList.length === 0) {
-      getChannelList();
+    if (isAuthenticated) {
+      fetchChannels();
     }
-  }, [channel])
-  
-// holder of channel 
-  const handleChannel = (id, name) => {
-    setChannel( { id, name  }); // Store both id and name
-    setReceiver(null);
+  }, [isAuthenticated, fetchChannels]);
+
+  // Filter channels based on search
+  const filteredChannels = channels.filter((channel) =>
+    channel.name?.toLowerCase().includes(channelSearch.toLowerCase())
+  );
+
+  // Handle channel selection
+  const handleChannelSelect = async (channel) => {
+    selectChannel(channel);
     setEditButton(true);
+    await loadMessages(channel.id);
+    console.log("Channel:", channel)
   };
-  
-// function to create new channel
-const handleCreateChannel = async (e) => {
-  e.preventDefault();
 
-  // Enhanced validation for the channel name
-  const nameRegex = /^[a-zA-Z0-9-_ ]{3,30}$/; // Example: Alphanumeric, dashes, underscores, spaces, 3-30 characters
-  if (!newChannelName.trim()) {
-    return alert("Channel name cannot be empty.");
-  }
-  if (!nameRegex.test(newChannelName)) {
-    return alert("Channel name can only include letters, numbers, spaces, dashes, and underscores, and must be between 3-30 characters long.");
-  }
+  // Handle creating a new channel
+  const handleCreateChannel = async (e) => {
+    e.preventDefault();
 
-  try {
-    const newChannelData = {
-      name: newChannelName.trim(),
-      user_ids: selectedUsers,
-    };
-
-    const response = await axios.post(`${API_URL}/channels`, newChannelData, { headers: userHeaders });
-
-    if (response.data) {
-      alert("Channel created successfully!");
-      setIsModalOpen(false);
-      setNewChannelName(""); // Reset form
-      setSelectedUsers([]); // Reset selected users
-      getChannelList();
-      setChannel({id: response.data.id, name: response.data.name });
+    // Validation
+    if (!newChannelName.trim()) {
+      alert("Channel name cannot be empty.");
+      return;
     }
-  } catch (error) {
-    console.error(error);
-    alert(error.response?.data?.errors || "Error creating channel, please invite users.");
-  }
-};
 
-  // function to cancel creating a new channel
-  const handleCancel = () => {
-    setIsModalOpen(false);
-    setSelectedUsers("");
-    setNewChannelName("");
-  };
+    if (selectedUsers.length === 0) {
+      alert("Please select at least one user to invite.");
+      return;
+    }
 
-// function to get DETAILS of a channel
-  const getChannelDetails = async () => {
-    if(!userHeaders.id)
     try {
-      const response = await axios.get(`${API_URL}/channels/${channel.id}`, { headers: userHeaders });
-      const details = response.data.data;
-      setChannelDetails(details);
-      setChannelMembers(details.channel_members);
-    } catch (error) {
-      if (error.response.data.errors) {
-        return alert("Cannot get channel details", error);
-      }
+      setLoading(true);
+      setError(null);
+
+      // Create channel with name and selected user IDs
+      const newChannel = await createChannelApi({
+        name: newChannelName.trim(),
+        user_ids: selectedUsers.map((id) => parseInt(id)),
+      });
+
+      alert("Channel created successfully!");
+
+      // Refresh channels list
+      await fetchChannels();
+
+      setIsModalOpen(false);
+      setNewChannelName("");
+      setSelectedUsers([]);
+
+      // Select the newly created channel
+      handleChannelSelect(newChannel);
+    } catch (err) {
+      setError(err.message || "Failed to create channel");
+      console.error("Failed to create channel:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (channel?.id) {
-      getChannelDetails();
-    }
-  }, [channel, channelMembers]); // Add channel.id and channelMembers as dependencies
-  
-
-
-  const [filteredChannels, setFilteredChannels] = useState([]); // filtered channel list
-  const [filteredUsers, setFilteredUsers] = useState([]); // filtered user list
- const [channelSearch, setChannelSearch] = useState(""); // search input for channels
-  const [userSearch, setUserSearch] = useState(""); // search input for users
-
-  // Filter channels based on search input
-  useEffect(() => {
-    const filtered = channelList.filter((channel) =>
-      channel.name.toLowerCase().includes(channelSearch.toLowerCase())
-    );
-    setFilteredChannels(filtered);
-  }, [channelSearch, channelList]);
-
-  // Filter users based on search input
-  useEffect(() => {
-    const filtered = userList.filter((user) =>
-      user.email.toLowerCase().includes(userSearch.toLowerCase())
-    );
-    setFilteredUsers(filtered);
-  }, [userSearch, userList]);
-
-  // Render the component
- 
-
+  // Filter users based on search
+  const filteredUsers = users
+    ? users.filter(
+        (user) =>
+          user.email?.toLowerCase().includes(userSearch.toLowerCase()) &&
+          user.id !== currentUser?.id // Exclude current user
+      )
+    : [];
 
   return (
-    <div className="dashboard-container">
-      
-      <div className="channel-bar">
+    <div className="channel-container">
+      <h2 className="channel-header">Channels</h2>
 
-          <h2 className="channel-header">Channel</h2>
-          <input
-          className="search-bar"
-          type="text"
-          placeholder="Search channels..."
-          value={channelSearch}
-          onChange={(e) => setChannelSearch(e.target.value)}
-        />
-        <ul className="channel-list-container">
-          {filteredChannels.length > 0 ? (
-            filteredChannels.map((channel) => (
-              <li key={channel.id} className="group-list" onClick={() => handleChannel(channel.id, channel.name)}>
-                <a className="group-name" href="#">{`# ${channel.name}`}</a>
-              </li>
-            ))
-          ) : (
-            <p
-            className="no-results">No channels found.</p>
-          )}
-        </ul>
+      {loading && <div className="loading">Loading channels...</div>}
+      {error && <div className="error">{error}</div>}
 
+      <input
+        className="search-bar"
+        type="text"
+        placeholder="Search channels..."
+        value={channelSearch}
+        onChange={(e) => setChannelSearch(e.target.value)}
+        disabled={loading}
+      />
 
-          <button 
-            className="create-group-button" 
-            onClick={() => {setIsModalOpen(true)}}>
-            Create Channel
-          </button>
+      <ul className="channel-list-container">
+        {filteredChannels.length > 0 ? (
+          filteredChannels.map((channel) => (
+            <li
+              key={channel.id}
+              className="group-list"
+              onClick={() => !loading && handleChannelSelect(channel)}
+            >
+              <a className="group-name" href="#">{`# ${channel.name}`}</a>
+            </li>
+          ))
+        ) : (
+          <p className="no-results">
+            {loading ? "Loading..." : "No channels found. Create one!"}
+          </p>
+        )}
+      </ul>
 
-          <h2 className="dm-header">Direct messages</h2>
-        <input
-          className="search-bar"
-          type="text"
-          placeholder="Search users..."
-          value={userSearch}
-          onChange={(e) => setUserSearch(e.target.value)}
-        />
-        <ul className="userList-container">
-          {filteredUsers.length > 0 ? (
-            filteredUsers.map((individual) => {
-              const { id, email } = individual;
-              return (
-                <div
-                  className="userList-individual"
-                  key={id}>
-                  <div onClick={() => handleReceiver({ id, email })}>
-                    <p>{email.split("@")[0]}</p>       
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div
-             className="no-results">No users found.</div>
-          )}
-        </ul>
-    </div>
+      <button
+        className="create-group-button"
+        onClick={() => setIsModalOpen(true)}
+        disabled={loading}
+      >
+        {loading ? "Creating..." : "Create Channel"}
+      </button>
 
       {/* Modal for Channel Creation */}
       {isModalOpen && (
         <div className="modal">
           <div className="modal-content">
             <h3>Create New Channel</h3>
+
             <input
               className="enter-channel-name"
               type="text"
               placeholder="Enter #channel name"
               value={newChannelName}
               onChange={(e) => setNewChannelName(e.target.value)}
+              disabled={loading}
             />
 
             <h4 className="invite-users">Invite Users</h4>
 
-            <div className="user-list">
-                {userList.map((user) => (
-                <label key={user.id}>
-                  <input
-                    className="checkbox"
-                    type="checkbox"
-                    value={String(user.id)}
-                    checked={selectedUsers.includes(String(user.id))}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setSelectedUsers((prev) =>
-                        e.target.checked ? [...prev, value] : prev.filter((u) => u !== value)
-                      );
-                    }}
-                  />
-                    {user.email} {/* Display user's name or email */}
-                </label>
-                  ))}
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              disabled={loading}
+            />
+
+            {usersLoading ? (
+              <div className="loading">Loading users...</div>
+            ) : (
+              <div className="user-list">
+                {filteredUsers.map((user) => (
+                  <label key={user.id} className="user-item">
+                    <input
+                      className="checkbox"
+                      type="checkbox"
+                      value={user.id}
+                      checked={selectedUsers.includes(String(user.id))}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setSelectedUsers((prev) =>
+                          e.target.checked
+                            ? [...prev, value]
+                            : prev.filter((u) => u !== value)
+                        );
+                      }}
+                      disabled={loading}
+                    />
+                    <span className="user-email">{user.email}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="modal-buttons">
+              <button
+                className="create-button"
+                onClick={handleCreateChannel}
+                disabled={
+                  loading ||
+                  selectedUsers.length === 0 ||
+                  !newChannelName.trim()
+                }
+              >
+                {loading ? "Creating..." : "Create"}
+              </button>
+
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="cancel-button"
+                disabled={loading}
+              >
+                Cancel
+              </button>
             </div>
-
-            <button 
-             className="create-button"
-             onClick={handleCreateChannel}
-             disabled={selectedUsers.length === 0} >
-              Create
-            </button>
-
-            <button 
-              onClick={handleCancel}
-              className="cancel-button">
-              Cancel
-            </button>
           </div>
         </div>
-    
       )}
-      <Primary
-        primary = {primary}
-        setPrimary = {setPrimary}
-        loggedUser = {loggedUser}
-        receiver={receiver} 
-        userId ={userId} 
-        setUserId ={setUserId}
-        loggedUserId = {loggedUserId}
-         />
-      <Chat 
-        receiver={receiver} 
-        setReceiver = {setReceiver}
-        channel={channel} 
-        setChannel = {setChannel}
-        userList = {userList} 
-        messages = {messages} 
-        setMessages = {setMessages}
-        editButton={editButton}
-        setEditButton={setEditButton} />
-
-      <Profile 
-        receiver={receiver} 
-        setReceiver = {setReceiver}
-        channel={channel} 
-        setChannel={setChannel}
-        userList = {userList} 
-        messages = {messages} 
-        setMessages = {setMessages} 
-        channelDetails = {channelDetails}
-        channelMembers = {channelMembers}
-        setChannelMembers = {setChannelMembers}/>
-   </div>
-   );
-  
-  }
+    </div>
+  );
+}
 
 export default Channel;

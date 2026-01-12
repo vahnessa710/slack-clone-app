@@ -5,8 +5,6 @@ import { IoIosMore } from "react-icons/io";
 import { useMessages } from "../context/MessagesProvider";
 
 function Chat({
-  receiver,
-  setReceiver,
   channel,
   userList,
   editButton,
@@ -20,7 +18,6 @@ function Chat({
   const [filteredUsers, setFilteredUsers] = useState(userList); // Filtered user list
   const [channelUser, setChannelUser] = useState([]);
   const messagesRef = useRef(null);
-  console.log(messages)
   // useEffect(() => {
   //   // Filter users when searchTerm changes
   //   setFilteredUsers(
@@ -34,25 +31,6 @@ function Chat({
     setSearchTerm(e.target.value); // Update search term
   };
 
-  // const fetchMessages = async () => {
-  //   if (!channel) return;
-  //   setLoading(true);
-  //   setError(null);
-  //   const receiverClass = channel ? "Channel" : "User";
-  //   const receiverId = channel ? channel.id : receiver?.id;
-
-  //   try {
-  //     const response = await axios.get(
-  //       `${API_URL}/messages?receiver_id=${receiverId}&receiver_class=${receiverClass}`,
-  //       { headers: userHeaders }
-  //     );
-  //     setMessages(response.data.data);
-  //   } catch (err) {
-  //     setError("Failed to fetch messages. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   useEffect(() => {
     if (channel?.id) {
@@ -118,14 +96,12 @@ function Chat({
 
   return (
     <div className={`group-window ${loading ? "no-scroll" : ""}`}>
-      {receiver || channel ? (
+      {channel ? (
         <>
           <div className="receiver-header-container">
             <h3>
               {channel?.name
                 ? `# ${channel.name}`
-                : receiver?.email
-                ? receiver.email.split("@")[0]
                 : "Welcome to Slacking!"}
             </h3>
 

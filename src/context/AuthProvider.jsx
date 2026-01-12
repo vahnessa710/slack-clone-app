@@ -32,7 +32,6 @@ const AuthProvider = ({ children }) => {
 
     setUserHeaders(updatedHeaders);
     localStorage.setItem("userHeaders", JSON.stringify(updatedHeaders));
-    // Optional: You might not need these separate items if you're using userHeaders object
   };
 
   const logout = () => {

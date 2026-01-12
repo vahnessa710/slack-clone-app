@@ -32,7 +32,7 @@ export const useMessageService = () => {
    },
    [userHeaders, handleAuthError]
  );
-//  console.log("fetchMessages with userHeaders:", userHeaders);
+
   const sendMessage = useCallback(
     async (channelId, content) => {
       try {

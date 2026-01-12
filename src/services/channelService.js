@@ -43,4 +43,17 @@ export const channelService = {
     }
   },
 
+  async createDirectMessage(userId, headers) {
+    if (!headers || !headers["access-token"]) {
+      throw new Error("Not authenticated");
+    }
+
+    const response = await axios.post(
+      `${API_URL}/channels/direct_message`,
+      { user_id: userId },
+      { headers }
+    );
+
+    return response.data;
+  },
 };
